@@ -360,30 +360,93 @@ export function RealTimeCMS() {
         }
       }
 
+      // Ensure numeric fields are properly converted before database operations
+      if (activeDataType === 'vehicles') {
+        // Force day to be a number
+        if (data.day !== undefined) {
+          data.day = parseInt(String(data.day), 10);
+          console.log('Converted day field to number:', data.day);
+          
+          // Validate the conversion was successful
+          if (isNaN(data.day)) {
+            console.error('Failed to convert day to number:', data.day);
+            data.day = 1; // Default to 1 if conversion fails
+          }
+        }
+        
+        // Ensure other numeric fields are properly converted
+        ['gps_required', 'fuel_sensors', 'fuel_tanks'].forEach(field => {
+          if (data[field] !== undefined) {
+            data[field] = parseInt(String(data[field]), 10);
+            console.log(`Converted ${field} field to number:`, data[field]);
+            
+            // Validate the conversion was successful
+            if (isNaN(data[field])) {
+              console.error(`Failed to convert ${field} to number:`, data[field]);
+              data[field] = 1; // Default to 1 if conversion fails
+            }
+          }
+        });
+      }
+      
       let result;
       if (editingItem) {
         // Update existing record - get the updated data back
-        const { data: updatedData, error } = await supabase
-          .from(tableName)
-          .update(data)
-          .eq('id', editingItem.id)
-          .select(); // Return updated data
+        console.log('Updating record with data:', data);
+        console.log('Numeric fields being updated:', {
+          day: typeof data.day === 'number' ? data.day : 'NOT A NUMBER',
+          gps_required: typeof data.gps_required === 'number' ? data.gps_required : 'NOT A NUMBER',
+          fuel_sensors: typeof data.fuel_sensors === 'number' ? data.fuel_sensors : 'NOT A NUMBER',
+          fuel_tanks: typeof data.fuel_tanks === 'number' ? data.fuel_tanks : 'NOT A NUMBER'
+        });
+        
+        try {
+          const { data: updatedData, error } = await supabase
+            .from(tableName)
+            .update(data)
+            .eq('id', editingItem.id)
+            .select(); // Return updated data
 
-        if (error) throw error;
-        result = updatedData;
+          if (error) {
+            console.error('Database update error:', error);
+            throw error;
+          }
+          result = updatedData;
+          console.log('Update result:', result);
 
-        showNotification('success', `${activeDataType.slice(0, -1)} updated successfully`);
+          showNotification('success', `${activeDataType.slice(0, -1)} updated successfully`);
+        } catch (error: any) {
+          console.error('Database update error details:', error);
+          throw error;
+        }
       } else {
         // Create new record - get the created data back
-        const { data: createdData, error } = await supabase
-          .from(tableName)
-          .insert([data])
-          .select(); // Return created data
+        console.log('Creating new record with data:', data);
+        console.log('Numeric fields being created:', {
+          day: typeof data.day === 'number' ? data.day : 'NOT A NUMBER',
+          gps_required: typeof data.gps_required === 'number' ? data.gps_required : 'NOT A NUMBER',
+          fuel_sensors: typeof data.fuel_sensors === 'number' ? data.fuel_sensors : 'NOT A NUMBER',
+          fuel_tanks: typeof data.fuel_tanks === 'number' ? data.fuel_tanks : 'NOT A NUMBER'
+        });
+        
+        try {
+          const { data: createdData, error } = await supabase
+            .from(tableName)
+            .insert([data])
+            .select(); // Return created data
 
-        if (error) throw error;
-        result = createdData;
+          if (error) {
+            console.error('Database insert error:', error);
+            throw error;
+          }
+          result = createdData;
+          console.log('Create result:', result);
 
-        showNotification('success', `${activeDataType.slice(0, -1)} created successfully`);
+          showNotification('success', `${activeDataType.slice(0, -1)} created successfully`);
+        } catch (error: any) {
+          console.error('Database insert error details:', error);
+          throw error;
+        }
       }
 
       // Force immediate cache invalidation and refresh
@@ -402,6 +465,12 @@ export function RealTimeCMS() {
         console.log('Database result:', result);
         console.log('Table name:', tableName);
         if (activeDataType === 'vehicles') {
+          // Ensure day field is a number
+          if (data.day !== undefined && typeof data.day !== 'number') {
+            data.day = parseInt(data.day, 10);
+            console.log('Converted day field to number:', data.day);
+          }
+          
           console.log('Vehicle data validation:');
           console.log('- Required fields present:', {
             type: !!data.type,
@@ -411,6 +480,7 @@ export function RealTimeCMS() {
             status: !!data.status
           });
           console.log('- Numeric fields:', {
+            day: typeof data.day === 'number' ? data.day : 'NOT A NUMBER',
             gps_required: typeof data.gps_required === 'number' ? data.gps_required : 'NOT A NUMBER',
             fuel_sensors: typeof data.fuel_sensors === 'number' ? data.fuel_sensors : 'NOT A NUMBER',
             fuel_tanks: typeof data.fuel_tanks === 'number' ? data.fuel_tanks : 'NOT A NUMBER'
@@ -578,24 +648,63 @@ export function RealTimeCMS() {
       const mutate = getCurrentMutate();
 
       // Validate and process import data
-      const processedData = importData.map(item => ({
-        ...item,
-        id: undefined, // Let Supabase generate new IDs
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
-      }));
+      const processedData = importData.map(item => {
+        const processedItem = {
+          ...item,
+          id: undefined, // Let Supabase generate new IDs
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        };
+        
+        // Ensure numeric fields are properly converted for vehicles
+        if (activeDataType === 'vehicles') {
+          // Convert day to number
+          if (processedItem.day !== undefined) {
+            processedItem.day = parseInt(String(processedItem.day), 10);
+            if (isNaN(processedItem.day)) {
+              console.warn('Invalid day value, defaulting to 1:', item.day);
+              processedItem.day = 1;
+            }
+          }
+          
+          // Convert other numeric fields
+          ['gps_required', 'fuel_sensors', 'fuel_tanks'].forEach(field => {
+            if (processedItem[field] !== undefined) {
+              processedItem[field] = parseInt(String(processedItem[field]), 10);
+              if (isNaN(processedItem[field])) {
+                console.warn(`Invalid ${field} value, defaulting to 1:`, item[field]);
+                processedItem[field] = 1;
+              }
+            }
+          });
+        }
+        
+        return processedItem;
+      });
 
-      const { error } = await supabase
-        .from(tableName)
-        .insert(processedData);
-
-      if (error) throw error;
-
-      showNotification('success', `${importData.length} records imported successfully`);
+      console.log(`Importing ${processedData.length} records to ${tableName}:`, processedData);
       
-      // Refresh data
-      await mutate();
-      setIsImportOpen(false);
+      try {
+        const { data, error } = await supabase
+          .from(tableName)
+          .insert(processedData)
+          .select();
+
+        if (error) {
+          console.error('Import error:', error);
+          throw error;
+        }
+
+        console.log(`Successfully imported ${data?.length || 0} records:`, data);
+        showNotification('success', `${data?.length || processedData.length} records imported successfully`);
+        
+        // Refresh data
+        await mutate();
+        setIsImportOpen(false);
+      } catch (importError: any) {
+        console.error('Failed to import data:', importError);
+        showNotification('error', `Import failed: ${importError.message || 'Database error'}`);
+      }
 
     } catch (error: any) {
       console.error('Import error:', error);

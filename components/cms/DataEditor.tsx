@@ -278,9 +278,55 @@ export function DataEditor({ dataType, item, onSave, onClose }: DataEditorProps)
       
       // Convert numeric strings to numbers
       formFields.forEach(field => {
-        if (field.type === 'number' && processedData[field.key] !== '') {
-          processedData[field.key] = Number(processedData[field.key]);
+        if (field.type === 'number' && processedData[field.key] !== undefined && processedData[field.key] !== '') {
+          // Store original value for logging
+          const originalValue = processedData[field.key];
+          
+          // Force all numeric fields to be proper numbers using parseInt for integers
+          if (['day', 'gps_required', 'fuel_sensors', 'fuel_tanks'].includes(field.key)) {
+            console.log(`Converting ${field.key} field to integer:`, originalValue);
+            processedData[field.key] = parseInt(String(originalValue), 10);
+            
+            // Validate the conversion was successful
+            if (isNaN(processedData[field.key])) {
+              console.error(`Failed to convert ${field.key} to number:`, originalValue);
+              
+              // Set appropriate defaults based on field
+              if (field.key === 'day') {
+                processedData[field.key] = 1; // Default day to 1
+              } else if (field.key === 'gps_required') {
+                processedData[field.key] = 1; // Default to 1 GPS device
+              } else if (field.key === 'fuel_sensors') {
+                processedData[field.key] = 1; // Default to 1 fuel sensor
+              } else if (field.key === 'fuel_tanks') {
+                processedData[field.key] = 1; // Default to 1 fuel tank
+              } else {
+                processedData[field.key] = 0; // Default other numeric fields to 0
+              }
+              
+              console.log(`Using default value for ${field.key}:`, processedData[field.key]);
+            }
+          } else {
+            // For other numeric fields that might need decimal precision
+            const originalValue = processedData[field.key];
+            processedData[field.key] = parseFloat(String(originalValue));
+            
+            // Validate the conversion was successful
+            if (isNaN(processedData[field.key])) {
+              console.error(`Failed to convert ${field.key} to number:`, originalValue);
+              processedData[field.key] = 0; // Default to 0 if conversion fails
+            }
+            console.log(`${field.key} after conversion:`, processedData[field.key]);
+          }
         }
+      });
+      
+      // Debug log all numeric fields
+      console.log('Numeric fields after conversion:', {
+        day: processedData.day,
+        gps_required: processedData.gps_required,
+        fuel_sensors: processedData.fuel_sensors,
+        fuel_tanks: processedData.fuel_tanks
       });
       
       // For tasks, extract actual values from display formats
