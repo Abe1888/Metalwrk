@@ -30,12 +30,12 @@ export async function GET() {
     }
 
     // Step 3: Find missing locations
-    const existingLocations = new Set(locations?.map(l => l.name) || [])
-    const vehicleLocations = new Set(vehicles?.map(v => v.location) || [])
-    const missingLocations = [...vehicleLocations].filter(loc => !existingLocations.has(loc))
+    const existingLocations = new Set((locations || []).map((l: { name: string }) => l.name))
+    const vehicleLocations = new Set((vehicles || []).map((v: { location: string }) => v.location))
+    const missingLocations = [...vehicleLocations].filter((loc) => !existingLocations.has(loc as string))
 
     // Step 4: Find orphaned vehicles
-    const orphanedVehicles = vehicles?.filter(v => !existingLocations.has(v.location)) || []
+    const orphanedVehicles = (vehicles || []).filter((v: { location: string }) => !existingLocations.has(v.location))
 
     return NextResponse.json({
       success: true,
@@ -43,9 +43,9 @@ export async function GET() {
         existingLocations: [...existingLocations],
         vehicleLocations: [...vehicleLocations],
         missingLocations,
-        orphanedVehicles: orphanedVehicles.map(v => ({ id: v.id, location: v.location })),
+        orphanedVehicles: orphanedVehicles.map((v: { id: string; location: string }) => ({ id: v.id, location: v.location })),
         locationCount: existingLocations.size,
-        vehicleCount: vehicles?.length || 0,
+        vehicleCount: (vehicles || []).length,
         issueCount: missingLocations.length + orphanedVehicles.length
       }
     })
@@ -75,7 +75,7 @@ export async function POST() {
 
     // Step 2: Create missing locations
     if (missingLocations.length > 0) {
-      const locationsToCreate = missingLocations.map(name => ({
+      const locationsToCreate = missingLocations.map((name: string) => ({
         name,
         duration: 'TBD',
         vehicles: 0,

@@ -16,25 +16,37 @@ import {
 } from 'lucide-react';
 
 // Dynamically import components to prevent SSR issues
-const ImprovedDashboard = dynamic(() => import('@/components/dashboard/ImprovedDashboard'), {
-  loading: () => <LoadingSpinner text="Loading dashboard..." />,
-  ssr: false,
-});
+const ImprovedDashboard = dynamic(
+  () => import('@/components/dashboard/ImprovedDashboard') as any,
+  {
+    loading: () => <LoadingSpinner text="Loading dashboard..." />,
+    ssr: false,
+  }
+);
 
-const VehicleSchedule = dynamic(() => import('@/components/schedule/VehicleSchedule').then(mod => ({ default: mod.VehicleSchedule })), {
-  loading: () => <LoadingSpinner text="Loading vehicle schedule..." />,
-  ssr: false,
-});
+const VehicleSchedule = dynamic(
+  () => import('@/components/schedule/VehicleSchedule') as any,
+  {
+    loading: () => <LoadingSpinner text="Loading vehicle schedule..." />,
+    ssr: false,
+  }
+);
 
-const OptimizedInstallationTimeline = dynamic(() => import('@/components/timeline/OptimizedInstallationTimeline'), {
-  loading: () => <LoadingSpinner text="Loading installation timeline..." />,
-  ssr: false,
-});
+const OptimizedInstallationTimeline = dynamic(
+  () => import('@/components/timeline/OptimizedInstallationTimeline') as any,
+  {
+    loading: () => <LoadingSpinner text="Loading timeline..." />,
+    ssr: false,
+  }
+);
 
-const WorkingGanttChart = dynamic(() => import('@/components/gantt/WorkingGanttChart'), {
-  loading: () => <LoadingSpinner text="Loading Gantt chart..." />,
-  ssr: false,
-});
+const WorkingGanttChart = dynamic(
+  () => import('@/components/gantt/WorkingGanttChart') as any,
+  {
+    loading: () => <LoadingSpinner text="Loading Gantt chart..." />,
+    ssr: false,
+  }
+);
 
 interface ShareableLink {
   id: string;
